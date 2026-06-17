@@ -1,6 +1,6 @@
 # AIBuddy
 
-A system-tray app that rewrites your text in different tones using AI. Works in **Slack desktop**, Slack web, and any application with a text field.
+A system-tray app that rewrites your text in different tones using AI. Works in **Slack desktop**, Slack web, and any application with a text field. AIBuddy is run from source (it is not distributed as a signed/notarized installer).
 
 ## How It Works
 
@@ -40,34 +40,27 @@ Transform or analyze the text you selected.
 - **Prompt Refiner** — fills in missing pieces and optimizes a prompt for an AI agent.
 - **Explain Error** — finds the likely root cause and fix for an error or stack trace.
 
-## Install (for users)
+## Getting Started
 
-Grab the latest installer from the [Releases page](https://github.com/kamolhasan/ai-buddy/releases):
-
-- **macOS** — download the `.dmg`, open it, and drag AIBuddy to Applications.
-- **Windows** — download the `.exe` (Setup) and run it.
-
-The app isn't signed with a paid certificate yet, so your OS will warn you the first time:
-
-- **macOS** — right-click the app and choose **Open**, then confirm. (If it reports the app is "damaged", run `xattr -cr /Applications/AIBuddy.app` once, then open it.) You'll also need to grant Accessibility permission — see [macOS Permissions](#macos-permissions).
-- **Windows** — on the SmartScreen prompt, click **More info** then **Run anyway**.
-
-After installing, open AIBuddy from the tray and add your AI provider API key in Settings (see [Configuration](#configuration)).
-
-## Setup (from source)
+The recommended (and only supported) way to run AIBuddy is from source.
 
 ### Prerequisites
 
-- Node.js 18+
+- [Node.js](https://nodejs.org/) 18+
+- [Git](https://git-scm.com/)
 - An API key from OpenAI or Anthropic
 
-### Install & Run
+### Clone & Run
 
 ```bash
+git clone https://github.com/kamolhasan/ai-buddy.git
+cd ai-buddy
 npm install
 npm run build
 npm start
 ```
+
+AIBuddy launches into the menu bar / system tray — there is no main window until you press the shortcut or pick **Show AIBuddy** from the tray.
 
 ### Configuration
 
@@ -79,12 +72,14 @@ On first launch, click the tray icon → Settings to configure:
 
 ### macOS Permissions
 
-AIBuddy needs **two** macOS permissions to read your selection and paste results:
+AIBuddy needs **two** macOS permissions to read your selection and paste results.
 
-1. **Accessibility** — System Settings → Privacy & Security → Accessibility → enable "AIBuddy".
-2. **Automation** — System Settings → Privacy & Security → Automation → AIBuddy → enable "System Events".
+Important: when you run from source, macOS grants these permissions to the **app that launches the process** — the Terminal or IDE you ran `npm start` from (e.g. **Terminal**, **iTerm**, **VS Code**, or **Cursor**), not to "AIBuddy" or "Electron". Grant the permissions to that launcher app:
 
-Granting Accessibility alone is not enough; without Automation, macOS silently blocks the copy/paste and the palette will open with no selected text. After changing either permission, fully quit and reopen AIBuddy. You can re-open these panes anytime from the tray icon → **Permissions Help**.
+1. **Accessibility** — System Settings → Privacy & Security → Accessibility → enable your Terminal/IDE.
+2. **Automation** — System Settings → Privacy & Security → Automation → your Terminal/IDE → enable "System Events".
+
+Granting Accessibility alone is not enough; without Automation, macOS silently blocks the copy/paste and the palette will open with no selected text. After changing either permission, fully quit and reopen the Terminal/IDE (and AIBuddy). If you later launch AIBuddy from a different terminal or IDE, you'll need to grant the permissions to that app too. You can re-open these panes anytime from the tray icon → **Permissions Help**.
 
 ## Development
 
@@ -94,25 +89,7 @@ npm run dev
 
 # In another terminal, run Electron
 npx electron dist/main.js
-
-# Build distributable
-npm run dist
 ```
-
-## Releasing
-
-Installers are built and published automatically by GitHub Actions ([.github/workflows/release.yml](.github/workflows/release.yml)) whenever a version tag is pushed:
-
-```bash
-# 1. Bump the "version" in package.json, then commit it
-git commit -am "Release v1.0.0"
-
-# 2. Tag and push — this triggers the macOS + Windows build
-git tag v1.0.0
-git push origin main --tags
-```
-
-The workflow builds on `macos-latest` and `windows-latest` and uploads the `.dmg`, `.zip`, and Windows `.exe` to a GitHub Release. No secrets to configure — it uses the built-in `GITHUB_TOKEN`.
 
 ## Tech Stack
 
@@ -123,18 +100,12 @@ The workflow builds on `macos-latest` and `windows-latest` and uploads the `.dmg
 
 ## Troubleshooting
 
-- **macOS: "Apple could not verify…" or app won't open** — the app isn't notarized (see note below). Open System Settings → Privacy & Security, click **Open Anyway** next to the AIBuddy message (or right-click the app → **Open**).
-- **macOS: "AIBuddy is damaged and can't be opened"** — clear the quarantine flag once: `xattr -cr /Applications/AIBuddy.app`, then open it.
-- **Windows: "Windows protected your PC" (SmartScreen)** — click **More info** then **Run anyway**.
 - **No window appears on launch** — that's expected. AIBuddy lives in the menu bar / system tray; click its icon, or press `Option+Space` (`Alt+Space` on Windows/Linux).
-- **macOS: `Option+Space` opens the palette but no text is captured** — you're missing the **Automation** permission. Enable AIBuddy under System Settings → Privacy & Security → Automation → System Events (and Accessibility), then restart AIBuddy. The tray → **Permissions Help** menu opens these panes for you.
+- **macOS: `Option+Space` opens the palette but no text is captured** — you're missing the **Automation** permission. Because you run from source, grant it to the **Terminal/IDE** that launched AIBuddy (not "Electron"): System Settings → Privacy & Security → Automation → your Terminal/IDE → enable "System Events" (and grant it Accessibility too), then restart the Terminal/IDE and AIBuddy. The tray → **Permissions Help** menu opens these panes for you.
 - **macOS: pressing the shortcut still does nothing** — first confirm the app is running (menu-bar icon). Try the tray → **Show AIBuddy** menu item: if that also does nothing, check tray → **Open Logs** for the cause. If only the shortcut fails, it's likely a conflict — pick a different one in Settings.
-- **macOS: it keeps asking for Accessibility permission every time I relaunch** — this happens when the app runs from a randomized path (App Translocation) because it's still quarantined. macOS ties the permission to the app's path, so the grant is lost each launch. Fix it once: (1) move AIBuddy to `/Applications` (drag it there from the DMG — don't run it from the DMG or Downloads), (2) clear the quarantine flag with `xattr -dr com.apple.quarantine /Applications/AIBuddy.app`, then (3) grant Accessibility once. The grant will now persist. (The permanent fix that avoids this entirely is notarization — see the note below.)
 - **"Failed to register shortcut"** — another app is using `Option/Alt+Space`. Pick a different shortcut in Settings.
 - **Actions error out or return nothing** — make sure you've set a valid API key and model in Settings. Standup/Handoff also need your JIRA and GitHub credentials.
 - **Linux: API keys not saved securely** — without a system keyring, keys are stored unencrypted. Install a keyring (e.g. GNOME Keyring) for encrypted storage.
-
-> **Note on the "unverified developer" / malware warning:** AIBuddy is currently distributed without Apple notarization (no paid Apple Developer ID), so macOS shows this warning and permissions can be less reliable for unsigned apps. The permanent fix is to sign with a Developer ID Application certificate and notarize the build — planned for when an Apple Developer account is available.
 
 ## License
 
